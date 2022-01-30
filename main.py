@@ -254,7 +254,7 @@ async def date_operation_last_month(callback: types.CallbackQuery):
     first = dt.date.today().replace(day=1) - dt.timedelta(days=1)
     last_m_day = int(first.day)
     last_m = int(first.month)
-    for i in range(1, last_m_day):
+    for i in range(1, last_m_day+1):
         date = str(dt.date.today().replace(month=last_m, day=i))
         but_inline_last.append(InlineKeyboardButton(f'{i}',\
              callback_data=f'u {table} {op_id} {date}'))
