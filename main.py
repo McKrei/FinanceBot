@@ -267,7 +267,6 @@ async def date_operation_last_month(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(Text(startswith='u '))
 async def date_operation_last_month(callback: types.CallbackQuery):
-    print(callback.data)
     table, op_id, date = callback.data.split()[1:]
     rdb.update_operation(table, int(op_id), date)
     await callback.answer(f'Save {date}')
@@ -289,5 +288,5 @@ async def loop_checking(wait):
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.create_task(loop_checking(10))
+    loop.create_task(loop_checking(86_400))
     executor.start_polling(dp)

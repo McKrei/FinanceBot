@@ -243,7 +243,6 @@ def check_sum_and_limit_update():
 	last_expense_list = limit_per_mont()
 	cursor.execute(f"SELECT * FROM limits WHERE date = '{now_month}'")
 	now_expense_list = list(cursor.fetchone()[1:])
-	print(last_expense_list)
 	for last, now in zip(last_expense_list, now_expense_list):
 		if last != now:
 			result = True
@@ -261,8 +260,4 @@ def update_operation(table, op_id, date):
 	''')
 	db.commit()
 
-
-# def update_monthly_limit(list, date=str(dt.datetime.now())[:7] + '-01', table='monthly_limit'):
-
-# print(check_sum_and_limit_update())
 
