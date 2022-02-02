@@ -34,7 +34,9 @@ def del_op(table, operation_id):
 	return
 
 
-def sum_month_income_and_expense(month=str(dt.datetime.now())[:7]):
+def sum_month_income_and_expense(month=0):
+	if month == 0:
+		month = str(dt.datetime.now())[:7]
 	if len(month) == 7: month += '-01'
 	cursor.execute(f'''
 		SELECT (Food + Transport + Home + Services + Rest + Other + Health + Clothes) as sum_limits
@@ -58,12 +60,15 @@ def sum_month_income_and_expense(month=str(dt.datetime.now())[:7]):
 	# return data_save.sum_table(sum_income, sum_limit - sum_income, sum_expense)
 
 
-def operation_list(date=str(dt.datetime.now())[:10]):
+def operation_list(date=0):
 	'''
 	Получаем месяц в формате '2022-01' тогда вернем лист за месяц
 	Если не передаем, вернем лист с операциями за сегодня
 	Еще может принять запрос за определенный день '2022-01-16'
 	'''
+	if date == 0:
+		date = str(dt.datetime.now())[:10]
+
 	if len(date) == 10:
 		before_date = f'"{date}","+1 day"'
 
@@ -103,7 +108,9 @@ def r_limits(month):
 	return result_dict
 
 
-def report_month(month=str(dt.datetime.now())[:7], other=None):
+def report_month(month=0, other=None):
+	if month == 0:
+		month = str(dt.datetime.now())[:7]
 	if len(month) == 2:
 		month = str(dt.datetime.now().year) + '-' + month
 	month += '-01'
@@ -151,7 +158,9 @@ def report_month(month=str(dt.datetime.now())[:7], other=None):
 	return table_expense, table_income
 
 
-def get_limits(date=str(dt.datetime.now())[:7]):
+def get_limits(date=0):
+	if date == 0:
+		date = str(dt.datetime.now())[:7]
 	if len(date) == 7: date += '-01'
 	cursor.execute(f'''
 		SELECT *
@@ -164,7 +173,10 @@ def get_limits(date=str(dt.datetime.now())[:7]):
 
 	return limits[1:]
 
-def update_monthly_limit(list, date=str(dt.datetime.now())[:7] + '-01', table='monthly_limit'):
+def update_monthly_limit(list, date=0, table='monthly_limit'):
+	if date == 0:
+		date = str(dt.datetime.now())[:7] + '-01'
+	
 	cursor.execute(f'''
 		UPDATE {table} 
 		SET Food = {list[0]},
