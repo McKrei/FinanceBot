@@ -254,7 +254,11 @@ def check_sum_and_limit_update():
 	last_month = get_last_month()
 	last_expense_list = limit_per_mont()
 	cursor.execute(f"SELECT * FROM limits WHERE date = '{now_month}'")
-	now_expense_list = list(cursor.fetchone()[1:])
+	limits = cursor.fetchone()
+	if limits:
+		now_expense_list = list(limits[1:])
+	else:
+		return
 	for last, now in zip(last_expense_list, now_expense_list):
 		if last != now:
 			result = True
