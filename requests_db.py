@@ -60,7 +60,7 @@ def sum_month_income_and_expense(month=0):
 	# return data_save.sum_table(sum_income, sum_limit - sum_income, sum_expense)
 
 
-def operation_list(date=0):
+def operation_list(date=0, order_by='date'):
 	'''
 	Получаем месяц в формате '2022-01' тогда вернем лист за месяц
 	Если не передаем, вернем лист с операциями за сегодня
@@ -79,13 +79,15 @@ def operation_list(date=0):
 	cursor.execute(f'''
 		SELECT id, category, amount, date
 		FROM income
-		WHERE date >= DATE('{date}') and date < DATE({before_date});
+		WHERE date >= DATE('{date}') and date < DATE({before_date})
+		ORDER BY {order_by};
 		''')
 	income_list = cursor.fetchall()
 	cursor.execute(f'''
 		SELECT id, category, amount, date
 		FROM expense
-		WHERE date >= DATE('{date}') and date < DATE({before_date});
+		WHERE date >= DATE('{date}') and date < DATE({before_date})
+		ORDER BY {order_by};
 		''')
 	return data_save.operation_str(income_list, cursor.fetchall())
 
@@ -136,8 +138,6 @@ def report_month(month=0, other=None):
 	if sum_amount:
 		for el in sum_amount:
 			dict[el[0]].append(el[1])	
-
-			
 
 	sum_income, sum_limit, sum_expense = sum_month_income_and_expense(month)
 	table_expense = data_save.table_month_expense(dict, sum_expense, sum_limit)
@@ -277,3 +277,10 @@ def update_operation(table, op_id, date):
 	db.commit()
 
 
+def get_info_operation(id, table):
+	cursor.execute(f'''
+	SELECT category, amount, date, message
+	FROM {table}
+	WHERE id = {id}	
+	''')
+	return cursor.fetchone()

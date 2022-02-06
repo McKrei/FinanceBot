@@ -44,6 +44,24 @@ async def start_command(message: types.Message):
     reply_markup=nav.main_menu)
 
 
+@dp.message_handler(Text(startswith='/id_'))
+@auth
+async def id_command(message: types.Message):
+    id = message.text[5:]
+    table = 'income' if message.text[4] == 'i' else 'expense'
+    result = rdb.get_info_operation(id, table)
+    if result:
+        category, amount, date, mes = result
+        msg = f'{date[6:]} {data_save.all_category_dict[category]} {amount}руб.\n{mes}'
+        await bot.send_message(message.from_user.id, msg,\
+            reply_markup=InlineKeyboardMarkup(row_width=2).add(\
+            InlineKeyboardButton('Удалить', callback_data=f'del {table} {id}'),\
+            InlineKeyboardButton('Выбрать дату', callback_data=f'date_op {table} {id}')))
+    else:
+        await bot.send_message(message.from_user.id, 'Операция не найдина!')
+
+# ('Evgeniy', 15810, '2022-02-04', 'Женя 15810')
+
 @dp.message_handler(Text(equals='Меню'))
 @auth
 async def open_menu(message: types.Message):
@@ -135,8 +153,6 @@ async def choice_report(message: types.Message):
         InlineKeyboardButton('По дням', callback_data=f'day_inline {date}')))
 
 
-
-
 @dp.message_handler()
 @auth
 async def processing_mes(message: types.Message):
@@ -205,9 +221,12 @@ async def change_limit(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(Text(startswith='list '))
 async def operation_print(callback: types.CallbackQuery):
-    date = callback.data.split()[1]
-    operation = rdb.operation_list(date)
-    await callback.message.answer(operation)
+    msg = callback.data.split()
+    date = msg[1]
+    order_by = 'date' if len(msg) == 2 else 'category'
+    operation = rdb.operation_list(date, order_by)
+    await callback.message.answer(operation, reply_markup=InlineKeyboardMarkup().add(\
+        InlineKeyboardButton('По категориям', callback_data=f'list {date} cat')))
 
     await callback.answer()
 

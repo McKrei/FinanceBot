@@ -18,7 +18,7 @@ def table_month_expense(dict, sum_expense, sum_income_limit):
 		if len(val) == 1:
 			table.add_row([all_category_dict[key].split()[0], 0, val[0]])
 		elif len(val) == 2:
-			table.add_row([all_category_dict[key].split()[0], val[1], val[1] - val[0]])
+			table.add_row([all_category_dict[key].split()[0], val[1], val[0] - val[1]])
 	table.add_row(['Сумма', sum_expense, sum_income_limit])
 	return table
 
@@ -163,15 +163,18 @@ def operation_str(income_list, expense_list):
 		result_income_str += 'Доходы:\n'
 		for i, el in enumerate(income_list):
 			result_income_str += \
-				f'{i+1}. {el[3][5:]} {all_category_dict[el[1]]}: {el[2]}руб.\n'
+				f'{i+1}. {el[3][5:]} {all_category_dict[el[1]]}: {el[2]}руб. /id_i{el[0]}\n'
+
 	if expense_list:
 		result_expense_str += 'Расходы:\n'
 		for i, el in enumerate(expense_list):
 			result_expense_str += \
-				f'{i+1}. {el[3][5:]} {all_category_dict[el[1]]}: {el[2]}руб.\n'
+				f'{i+1}. {el[3][5:]} {all_category_dict[el[1]]}: {el[2]}руб. /id_e{el[0]}\n'
 	result = result_expense_str + result_income_str
 	if not result: return 'Нет операций за данный период'
-	return result_expense_str + result_income_str 
+	return result
+
+
 
 def limits_table(list):
 	if list == 'Нет данных': 
