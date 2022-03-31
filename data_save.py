@@ -2,7 +2,6 @@ import random
 
 from prettytable import PrettyTable
 
-	
 
 def sum_table(sum_income, sum_income_limit, sum_expense):
 	table = PrettyTable()	
@@ -31,22 +30,36 @@ def table_month_income(list, sum_income):
 	table.add_row(['Сумма', sum_income])
 	return table
 
-def new_table():
-	tab = PrettyTable()
-	col_1 = []
-	col_2 = []
-	# col_3 = []
-	col_4 = []
-	for key in expense:
-		col_1.append(expense[key][2].title())
-		col_2.append(start_data_limit[key])
-		# col_3.append(limit[key])
-		col_4.append(limit[key] + start_data_limit[key])
-	tab.add_column('Категория', col_1)
-	tab.add_column('➖', col_2)
-	# tab.add_column('Лимит', col_3)
-	tab.add_column('Ост', col_4)	
-	return tab
+# def new_table():
+# 	tab = PrettyTable()
+# 	col_1 = []
+# 	col_2 = []
+# 	# col_3 = []
+# 	col_4 = []
+# 	for key in expense:
+# 		col_1.append(expense[key][2].title())
+# 		col_2.append(start_data_limit[key])
+# 		# col_3.append(limit[key])
+# 		col_4.append(limit[key] + start_data_limit[key])
+# 	tab.add_column('Категория', col_1)
+# 	tab.add_column('➖', col_2)
+# 	# tab.add_column('Лимит', col_3)
+# 	tab.add_column('Ост', col_4)	
+# 	return tab
+
+category_excel_dict = {
+	'Food': 'C',
+	'Transport': 'D',
+	'Home': 'E',
+	'Services': 'F',
+	'Rest': 'G',
+	'Other': 'H',
+	'Health': 'I',
+	'Clothes': 'J',
+	'Vika': 'M',
+	'Evgeniy': 'N',
+	'Cash': 'O'
+}
 		
 month_dict = {
 	'Январь': '01',
@@ -80,29 +93,7 @@ report_list = ('Выбрать Месяц!',
 	'Декабрь'
 )			
 
-start_data_limit = {
-	'Food': -2704,
-	'Transport': -1208,
-	'Home': -233,
-	'Services': -293,
-	'Rest': -10885,
-	'Other': -530,
-	'Health': -4772,
-	'Clothes': -4887
-}
-
-limit = {
-	'Food': 14000,
-	'Transport': 4000,
-	'Home': 14000,
-	'Services': 2000,
-	'Rest': 3000,
-	'Other': 4000,
-	'Health': 2000,
-	'Clothes': 2000
-}
-
-users_id = (397014552, 415598571)
+users_id = (415598571, 397014552)
 
 expense = {
 	'Food': ('Food', 'Еда\Быт', 'еда', 'быт', 'сома'),
@@ -187,5 +178,4 @@ def limits_table(list):
 	return table
 
 
-if __name__ == '__main__':
-	print(new_table())
+# if __name__ == '__main__':

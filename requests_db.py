@@ -1,6 +1,7 @@
+from calendar import month
 import sqlite3
 import datetime as dt
-
+from openpyexcel import load_workbook
 import data_save
 
 db = sqlite3.connect('finance.db')
@@ -213,50 +214,55 @@ def get_sum_day_in_month(month):
 	result = cursor.fetchall()
 	return result
 
-def get_last_month():
+def get_last_month(minus_day=1):
 	# Возвращает прошлый месяц в формате '2022-01'
-	first = dt.date.today().replace(day=1) - dt.timedelta(days=1)
+	first = dt.date.today().replace(day=1) - dt.timedelta(days=minus_day)
 	last_month = first.strftime("%Y-%m")
 	return last_month
 
 
-def limit_per_mont():
+def limit_per_mont(month, month_limit='0000-00-00'):
 	# Считаем все категории с учетом лимитов
-	last_month = get_last_month()
-	dict_expense = report_month(last_month, True)
-	limit = list(get_limits('0000-00-00'))
+	dict_expense = report_month(month, True)
+	limit = list(get_limits(month_limit))
 	result = [dict_expense[key][0] + limit[i] for i, key in enumerate(dict_expense)]
 	return result
 
 def new_month(date):
 	# Записываем лимиты в таблички в начале месяца
 
-	# Проверка на наличие данных в monthly_limit
+	# Проверка на наличие данных в monthly_limit и запись
 	cursor.execute(f"SELECT * FROM monthly_limit WHERE date = '{date}'")
 	if not cursor.fetchone():
 		limit = [date] + list(get_limits('0000-00-00'))
 		cursor.execute('INSERT INTO monthly_limit VALUES (?,?,?,?,?,?,?,?,?)', limit)
 		db.commit()
 
-	# Проверка на наличие данных в limits
+	# Проверка на наличие данных в limits и запись
 	cursor.execute(f"SELECT * FROM limits WHERE date = '{date}'")
 	if not cursor.fetchone():
-		result = limit_per_mont()
+		result = limit_per_mont(get_last_month())
 		cursor.execute('INSERT INTO limits VALUES (?,?,?,?,?,?,?,?,?)', [date] + result)
 		db.commit()	
 	return
 
+def update_table_limits_now_month():
+	month = str(dt.datetime.now())[:7]
+	last_month = get_last_month()
+	limit = limit_per_mont(last_month, month)
+	update_monthly_limit(limit, month + '-01', 'limits')
 
-# Проверка на соответствие валидностити данных в лимитах
+
+# Проверка на соответствие валидности данных в лимитах
 def check_sum_and_limit_update():
 	result = False
 	now_month = str(dt.datetime.now())[:7] + '-01'
 	last_month = get_last_month()
-	last_expense_list = limit_per_mont()
+	now_expense_list = limit_per_mont(last_month)
 	cursor.execute(f"SELECT * FROM limits WHERE date = '{now_month}'")
 	limits = cursor.fetchone()
 	if limits:
-		now_expense_list = list(limits[1:])
+		last_expense_list = list(limits[1:])
 	else:
 		return
 	for last, now in zip(last_expense_list, now_expense_list):
@@ -265,7 +271,7 @@ def check_sum_and_limit_update():
 			break
 	if result == True:
 		update_monthly_limit(now_expense_list, now_month, 'limits')
-	return 
+	return result
 
 
 def update_operation(table, op_id, date):
@@ -284,3 +290,60 @@ def get_info_operation(id, table):
 	WHERE id = {id}	
 	''')
 	return cursor.fetchone()
+
+
+''' ### ФУНКЦИИ ДЛЯ ЗАПИСИ ДАННЫХ ПРОШЛОГО МЕСЯЦА В EXCEL ### '''
+
+def get_data_month(month, table):
+	# Запрашиваем данные из БД по указанной таблице и за указанный месяц
+	execute = f'''
+		SELECT date, category, sum(amount) as sum
+		FROM '{table}'
+		WHERE date >= DATE('{month}') and date < DATE('{month}', '+1 month')
+		GROUP BY date, category
+	'''
+	cursor.execute(execute)
+	data = cursor.fetchall()
+	return data
+
+
+def writing_table(date, data, dict_expense_last, limit_now_month):
+
+	month, year = int(date[5:7]), date[:4] 				# Получаем год, месяц 
+	filename    = f'excel_tables/Расходы {year}.xlsx' 	# Эксель файл
+	wb 		    = load_workbook(filename=filename)		# Открываем файл
+	wb.active   = month 								# Открываем лист соответствующий месяцу
+	sheet       = wb.active 
+
+	for to_date, cat, number in data:
+		en_date = str(int(to_date[-2:]) + 3)			# Получаем номер строки
+		en_cat  = data_save.category_excel_dict[cat]	# Получаем номер столбца
+		sheet[en_cat + en_date] = number				# Записываем ячейку
+
+	for i, item in enumerate(dict_expense_last.items()):
+		en_cat  = data_save.category_excel_dict[item[0]]# Получаем номер строки 
+		sheet[en_cat + '36'] = limit_now_month[i]		# Записываем лимит по категории
+		sheet[en_cat + '38'] = item[1][0]				# Записываем остаток с прошлого месяца
+
+	wb.save(filename)									# Сохраняем файл
+	return filename
+
+
+def to_excel():
+	# Получаем прошлый месяц
+	month = get_last_month() + '-01'
+	data  = get_data_month(month, 'expense') + get_data_month(month, 'income')
+
+	# Получаем словарь затрат предыдущего месяца
+	dict_expense_last = report_month(get_last_month(32), True)
+
+	# Получаем лимиты прошлого месяца	
+	limit_now_month = get_limits(month)
+
+	filename = writing_table(month, data, dict_expense_last, limit_now_month)
+	return filename
+
+
+
+if __name__ == '__main__':
+	to_excel()

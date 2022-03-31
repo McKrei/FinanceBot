@@ -5,7 +5,7 @@ from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.utils import executor
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 import datetime as dt
 
 import data_save
@@ -212,11 +212,13 @@ async def operation_del(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(Text(startswith='limit '))
 async def change_limit(callback: types.CallbackQuery):
-    rdb.change_limit_in_db(callback.data.split()[1])
-    if callback.data.split()[1] == 'save':
-        await callback.answer('Лимиты сохраненны')
+    inf = callback.data.split()[1]
+    rdb.change_limit_in_db(inf)
+    if inf == 'save':
+        await callback.answer('Лимиты сохранены')
+        rdb.update_table_limits_now_month()
     else:
-        await callback.answer('Лимиты отмененны')
+        await callback.answer('Лимиты отменены')
 
 
 @dp.callback_query_handler(Text(startswith='list '))
@@ -294,15 +296,24 @@ async def date_operation_last_month(callback: types.CallbackQuery):
 
 async def loop_checking(wait):
     while True:
-        if str(dt.datetime.now().day) == '1':
-            date = str(dt.datetime.now())[:10]
+        date_now = dt.datetime.now()
+        
+        if str(date_now.day) == '1':            
+            # Генерим новые лимиты на месяц
+            date = str(date_now)[:10]
             rdb.new_month(date)
+
+            # Переносим БД в эксель и отправляем пользователю
+            path = rdb.to_excel()
+            file = open(path,"rb")
+            await bot.send_document(data_save.users_id[0], file)
+            file.close()
+
         rdb.change_limit_in_db('return')
 
-        if str(dt.datetime.now().month) != '1':
+        if str(date_now.month) != '1':
             rdb.check_sum_and_limit_update()
         await asyncio.sleep(wait)
-
 
 
 if __name__ == '__main__':
