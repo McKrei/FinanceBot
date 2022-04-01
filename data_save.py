@@ -63,8 +63,8 @@ month_dict = {
 inverted_month_dict = {v: k for k, v in month_dict.items()}
 
 path_plots = (
-	'data/plot_incomes.png',
-	'data/plot_expense.png',	
+	'data/plot_Incomes.png',
+	'data/plot_Expense.png',	
 	'data/plot_Incomes and Expense.png'
 )
 
