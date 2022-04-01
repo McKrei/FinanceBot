@@ -4,7 +4,7 @@ import datetime as dt
 from openpyexcel import load_workbook
 import data_save
 
-db = sqlite3.connect('finance.db')
+db = sqlite3.connect('data/finance.db')
 cursor = db.cursor()
 
 
@@ -57,11 +57,16 @@ def sum_month_income_and_expense(month=0):
 		WHERE date >= DATE('{month}') and date < DATE('{month}', '+1 month');
 		''')
 	sum_income = cursor.fetchone()[0]
+
+	# Проверка на наличие данных 
+	sum_expense = 0 if not sum_expense else sum_expense
+	sum_income  = 0 if not sum_income else sum_income
+	
 	return sum_income, sum_limit - sum_expense, sum_expense
 	# return data_save.sum_table(sum_income, sum_limit - sum_income, sum_expense)
 
 
-def operation_list(date=0, order_by='date'):
+def operation_list(date=0, order_by='date', only_table=False):
 	'''
 	Получаем месяц в формате '2022-01' тогда вернем лист за месяц
 	Если не передаем, вернем лист с операциями за сегодня
@@ -90,7 +95,11 @@ def operation_list(date=0, order_by='date'):
 		WHERE date >= DATE('{date}') and date < DATE({before_date})
 		ORDER BY {order_by};
 		''')
-	return data_save.operation_str(income_list, cursor.fetchall())
+	expense_list = cursor.fetchall()
+	if only_table == 'expense':
+		return expense_list
+
+	return data_save.operation_str(income_list, expense_list)
 
 
 def r_limits(month):
@@ -109,7 +118,6 @@ def r_limits(month):
 	d = data_save.expense
 	result_dict = {key: [l[i]] for i, key in enumerate(d)} 
 	return result_dict
-
 
 def report_month(month=0, other=None):
 	if month == 0:
@@ -143,7 +151,7 @@ def report_month(month=0, other=None):
 	sum_income, sum_limit, sum_expense = sum_month_income_and_expense(month)
 	table_expense = data_save.table_month_expense(dict, sum_expense, sum_limit)
 	
-	if sum_income:
+	if sum_income and sum_income > 0:
 		cursor.execute(f'''
 			SELECT category, SUM(amount)
 			FROM income
@@ -310,7 +318,7 @@ def get_data_month(month, table):
 def writing_table(date, data, dict_expense_last, limit_now_month):
 
 	month, year = int(date[5:7]), date[:4] 				# Получаем год, месяц 
-	filename    = f'excel_tables/Расходы {year}.xlsx' 	# Эксель файл
+	filename    = f'data/Расходы {year}.xlsx'			# Эксель файл
 	wb 		    = load_workbook(filename=filename)		# Открываем файл
 	wb.active   = month 								# Открываем лист соответствующий месяцу
 	sheet       = wb.active 
@@ -346,4 +354,4 @@ def to_excel():
 
 
 if __name__ == '__main__':
-	to_excel()
+	print(report_month('2022-04'))

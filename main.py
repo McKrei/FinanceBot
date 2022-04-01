@@ -5,9 +5,10 @@ from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.utils import executor
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import datetime as dt
 
+import visualization
 import data_save
 import markups as nav
 import requests_db as rdb
@@ -150,8 +151,8 @@ async def choice_report(message: types.Message):
         parse_mode=types.ParseMode.HTML,\
         reply_markup=InlineKeyboardMarkup(row_width=2).add(\
         InlineKeyboardButton('Операции', callback_data=f'list {date}'),\
-        InlineKeyboardButton('По дням', callback_data=f'day_inline {date}')))
-
+        InlineKeyboardButton('По дням', callback_data=f'day_inline {date}'),\
+        InlineKeyboardButton('Пирожок', callback_data=f'visual pie {date}')))
 
 @dp.message_handler()
 @auth
@@ -287,17 +288,30 @@ async def date_operation_last_month(callback: types.CallbackQuery):
     
 
 @dp.callback_query_handler(Text(startswith='u '))
-async def date_operation_last_month(callback: types.CallbackQuery):
+async def update_operation_list(callback: types.CallbackQuery):
     table, op_id, date = callback.data.split()[1:]
     rdb.update_operation(table, int(op_id), date)
     await callback.answer(f'Save {date}')
 
 
+@dp.callback_query_handler(Text(startswith='visual '))
+async def visualization_data(callback: types.CallbackQuery):
+    figure, date = callback.data.split()[1:]
+    
+    if figure == 'pie':
+        result = visualization.create_pie(date)
+        if not result:
+            await callback.answer('Нету данных')
+        else:
+            photo = open('data/saved_figure.png',"rb")
+            await callback.message.answer_photo(photo)
+            # await callback.send_photo(message.from_user.id, photo)
+
 
 async def loop_checking(wait):
     while True:
         date_now = dt.datetime.now()
-        
+
         if str(date_now.day) == '1':            
             # Генерим новые лимиты на месяц
             date = str(date_now)[:10]
