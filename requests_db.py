@@ -318,7 +318,7 @@ def get_data_month(month, table):
 def writing_table(date, data, dict_expense_last, limit_now_month):
 
 	month, year = int(date[5:7]), date[:4] 				# Получаем год, месяц 
-	filename    = f'data/Расходы {year}.xlsx'			# Эксель файл
+	filename    = f'data/Family budget {year}.xlsx'		# Эксель файл
 	wb 		    = load_workbook(filename=filename)		# Открываем файл
 	wb.active   = month 								# Открываем лист соответствующий месяцу
 	sheet       = wb.active 

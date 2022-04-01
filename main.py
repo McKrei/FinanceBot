@@ -1,3 +1,4 @@
+from email import message
 import re
 import asyncio
 
@@ -57,7 +58,7 @@ async def id_command(message: types.Message):
         await bot.send_message(message.from_user.id, msg,\
             reply_markup=InlineKeyboardMarkup(row_width=2).add(\
             InlineKeyboardButton('Удалить', callback_data=f'del {table} {id}'),\
-            InlineKeyboardButton('Выбрать дату', callback_data=f'date_op {table} {id}')))
+            InlineKeyboardButton('Выбрать дату', callback_data=f'date_op {table} {id} now')))
     else:
         await bot.send_message(message.from_user.id, 'Операция не найдина!')
 
@@ -186,7 +187,7 @@ async def processing_mes(message: types.Message):
             f'Записал:\n{mes_cat} {summ}руб',\
             reply_markup=InlineKeyboardMarkup(row_width=2).add(\
             InlineKeyboardButton('Отмена', callback_data=f'del {table} {operation_id}'),\
-            InlineKeyboardButton('Дата', callback_data=f'date_op {table} {operation_id}')))
+            InlineKeyboardButton('Дата', callback_data=f'date_op {table} {operation_id} now')))
 
     except Exception:
         await bot.send_message(message.from_user.id, 'Я тебя не понял')
@@ -200,7 +201,7 @@ async def operation_add(callback: types.CallbackQuery):
     await callback.message.answer(f'Записал:\n{category} {summ}руб',\
         reply_markup=InlineKeyboardMarkup().add(\
         InlineKeyboardButton('Отмена', callback_data=f'del {table} {operation_id}'),\
-        InlineKeyboardButton('Дата', callback_data=f'date_op {table} {operation_id}')))
+        InlineKeyboardButton('Дата', callback_data=f'date_op {table} {operation_id} now')))
     await callback.answer()
 
 
@@ -250,42 +251,44 @@ async def day_inline(callback: types.CallbackQuery):
     
     await callback.answer()
 
+
+async def button_list_day(last_day, table, op_id, month):
+    button_list = []
+    for i in range(1, last_day):
+        day = str(i)
+        day = day if len(day) == 2 else '0' + day
+        date = month + day
+        button_list.append(InlineKeyboardButton(f'{i}',\
+            callback_data=f'u {table} {op_id} {date}'))
+    return button_list
+
 @dp.callback_query_handler(Text(startswith='date_op '))
 async def date_operation(callback: types.CallbackQuery):
-    table, op_id = callback.data.split()[1], int(callback.data.split()[2])
-    but_inline_now = []
-    now_day = int(dt.datetime.now().day)
-    for i in range(1, now_day):
-        date = str(dt.date.today().replace(day=i))
-        but_inline_now.append(InlineKeyboardButton(f'{i}',\
-             callback_data=f'u {table} {op_id} {date}'))
+    table, op_id, when = callback.data.split()[1:]
+    now_day = dt.datetime.now().day
 
-    but_inline_now.append(InlineKeyboardButton(f'Прошлый',\
-             callback_data=f'date_op_last {table} {op_id}'))
+    if when == 'last' or now_day == 1:
+        first          = dt.date.today().replace(day=1) - dt.timedelta(days=1)
+        last_day       = first.day + 1
+        last_m         = first.month
+        date           = str(dt.date.today().replace(month=last_m))[:8]
+        but_inline_now = await button_list_day(last_day, table, int(op_id), date)
+        message_text   = 'Прошлый месяц'
+    
+    else:
+        date           = str(dt.date.today())[:8]
+        but_inline_now = await button_list_day(now_day, table, int(op_id), date)
+        message_text   = 'Текущий месяц'
+        but_inline_now.append(InlineKeyboardButton(f'Прошлый',\
+            callback_data=f'date_op {table} {op_id} last'))
 
-    await callback.message.answer(f'Текущий месяц',\
+
+    await callback.message.answer(message_text,\
         reply_markup=InlineKeyboardMarkup(row_width=5).add(*but_inline_now))
     
     await callback.answer()
 
 
-@dp.callback_query_handler(Text(startswith='date_op_last '))
-async def date_operation_last_month(callback: types.CallbackQuery):
-    table, op_id = callback.data.split()[1], int(callback.data.split()[2])
-    but_inline_last = []
-    first = dt.date.today().replace(day=1) - dt.timedelta(days=1)
-    last_m_day = int(first.day)
-    last_m = int(first.month)
-    for i in range(1, last_m_day+1):
-        date = str(dt.date.today().replace(month=last_m, day=i))
-        but_inline_last.append(InlineKeyboardButton(f'{i}',\
-             callback_data=f'u {table} {op_id} {date}'))
-
-    await callback.message.answer(f'Прошлый месяц',\
-        reply_markup=InlineKeyboardMarkup(row_width=5).add(*but_inline_last))
-    
-    await callback.answer()
-    
 
 @dp.callback_query_handler(Text(startswith='u '))
 async def update_operation_list(callback: types.CallbackQuery):
