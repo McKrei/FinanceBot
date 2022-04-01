@@ -30,22 +30,6 @@ def table_month_income(list, sum_income):
 	table.add_row(['Сумма', sum_income])
 	return table
 
-# def new_table():
-# 	tab = PrettyTable()
-# 	col_1 = []
-# 	col_2 = []
-# 	# col_3 = []
-# 	col_4 = []
-# 	for key in expense:
-# 		col_1.append(expense[key][2].title())
-# 		col_2.append(start_data_limit[key])
-# 		# col_3.append(limit[key])
-# 		col_4.append(limit[key] + start_data_limit[key])
-# 	tab.add_column('Категория', col_1)
-# 	tab.add_column('➖', col_2)
-# 	# tab.add_column('Лимит', col_3)
-# 	tab.add_column('Ост', col_4)	
-# 	return tab
 
 category_excel_dict = {
 	'Food': 'C',
@@ -75,6 +59,14 @@ month_dict = {
 	'Ноябрь': '11',
 	'Декабрь': '12'
 }
+
+inverted_month_dict = {v: k for k, v in month_dict.items()}
+
+path_plots = (
+	'data/plot_incomes.png',
+	'data/plot_expense.png',	
+	'data/plot_Incomes and Expense.png'
+)
 
 report_list = ('Выбрать Месяц!',
 	'Месяц',
@@ -126,6 +118,21 @@ all_category_dict = {
 	'Cash': 'Шабашки'
 }
 
+message_help = '''
+	Для старта работы в боте введи /start
+	Для записи операции используй формулу:
+	Категория СУММА комментарий(не обязательно) Еда 100 кофе
+	Если ошибся с категорией, бот выдаст ошибку и варианты выбора.
+
+	Для изменения лимитов на текущий месяц и все последующие,
+	используется следующая команда:
+	Лимиты (лимит на еду) (транспорт) (Дом) ....
+	Пример: Лимиты 16000 10000 8000 2000 3000 2000 2000 2000
+	В сумме должно получиться 45000
+
+	Все остальное интуитивно понятно!	
+'''
+
 sticker_list = ['CAACAgIAAxkBAAPRYem-0F6qF6mJfOajDPi_HmL0nWAAAuQRAAKEcVlIZsvazGS6RV4jBA']
 
 def random_sticker(sticker=None):
@@ -154,13 +161,13 @@ def operation_str(income_list, expense_list):
 		result_income_str += 'Доходы:\n'
 		for i, el in enumerate(income_list):
 			result_income_str += \
-				f'{i+1}. {el[3][5:]} {all_category_dict[el[1]]}: {el[2]}руб. /id_i{el[0]}\n'
+				f'{i+1}. {el[3][5:]} {all_category_dict[el[1]]}: {el[2]} руб. /id_i{el[0]}\n'
 
 	if expense_list:
 		result_expense_str += 'Расходы:\n'
 		for i, el in enumerate(expense_list):
 			result_expense_str += \
-				f'{i+1}. {el[3][5:]} {all_category_dict[el[1]]}: {el[2]}руб. /id_e{el[0]}\n'
+				f'{i+1}. {el[3][5:]} {all_category_dict[el[1]]}: {el[2]} руб. /id_e{el[0]}\n'
 	result = result_expense_str + result_income_str
 	if not result: return 'Нет операций за данный период'
 	return result

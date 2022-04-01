@@ -1,4 +1,3 @@
-from email import message
 import re
 import asyncio
 
@@ -38,9 +37,15 @@ async def send_sticker(message: types.Message):
         f'Sticker ID:\n{sticker_id}')
 
 
-@dp.message_handler(commands=['start'])
+@dp.message_handler(commands=['help'])
 @auth
 async def start_command(message: types.Message):
+    await bot.send_message(message.from_user.id,data_save.message_help)
+
+
+@dp.message_handler(commands=['start'])
+@auth
+async def help_command(message: types.Message):
     await bot.send_message(message.from_user.id,\
     'Привет {0.first_name}'.format(message.from_user),\
     reply_markup=nav.main_menu)
@@ -62,7 +67,6 @@ async def id_command(message: types.Message):
     else:
         await bot.send_message(message.from_user.id, 'Операция не найдина!')
 
-# ('Evgeniy', 15810, '2022-02-04', 'Женя 15810')
 
 @dp.message_handler(Text(equals='Меню'))
 @auth
@@ -136,9 +140,12 @@ async def choice_report(message: types.Message):
         table_expense, table_income = rdb.report_month(month)
 
     if message.text == 'Год':
+        year = dt.datetime.now().year
         await bot.send_message(message.from_user.id,\
-            f'{message.text}: Тут будет отчет за год!',\
-            reply_markup=nav.main_menu)
+            'Тут будет таблица, еще не придумал какая!',\
+            parse_mode=types.ParseMode.HTML,\
+            reply_markup=InlineKeyboardMarkup(row_width=1).add(\
+            InlineKeyboardButton('График', callback_data=f'visual plots {year}')))
         return
 
     if not table_expense and not table_income: 
@@ -306,9 +313,20 @@ async def visualization_data(callback: types.CallbackQuery):
         if not result:
             await callback.answer('Нету данных')
         else:
-            photo = open('data/saved_figure.png',"rb")
-            await callback.message.answer_photo(photo)
-            # await callback.send_photo(message.from_user.id, photo)
+            with open('data/saved_figure.png', "rb") as photo:
+                await callback.message.answer_photo(photo)
+
+
+    elif figure == 'plots':
+        result = visualization.year_plots(date)
+
+        if not result:
+            await callback.answer('Нету данных')
+
+        else:
+            for path in data_save.path_plots:
+                with open(path, "rb") as photo:
+                    await callback.message.answer_photo(photo)
 
 
 async def loop_checking(wait):

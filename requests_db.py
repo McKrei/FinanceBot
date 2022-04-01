@@ -66,16 +66,23 @@ def sum_month_income_and_expense(month=0):
 	# return data_save.sum_table(sum_income, sum_limit - sum_income, sum_expense)
 
 
-def operation_list(date=0, order_by='date', only_table=False):
+def operation_list(date=0, order_by='date', only_table=False, year=None):
 	'''
 	Получаем месяц в формате '2022-01' тогда вернем лист за месяц
 	Если не передаем, вернем лист с операциями за сегодня
 	Еще может принять запрос за определенный день '2022-01-16'
+	Если указанна функция year '2022' выдаст данные за год
+	only_table можно указать если нужны чистые данные из таблиц или таблицы
 	'''
-	if date == 0:
-		date = str(dt.datetime.now())[:10]
+	if year:
+		date = year + '-01-01'
+		before_date = f'"{date}","+1 year"'
 
-	if len(date) == 10:
+	elif date == 0:
+		date = str(dt.datetime.now())[:10]
+		before_date = f'"{date}","+1 month"'
+
+	elif len(date) == 10:
 		before_date = f'"{date}","+1 day"'
 
 	elif len(date) == 7:
@@ -84,20 +91,29 @@ def operation_list(date=0, order_by='date', only_table=False):
 
 	cursor.execute(f'''
 		SELECT id, category, amount, date
-		FROM income
-		WHERE date >= DATE('{date}') and date < DATE({before_date})
-		ORDER BY {order_by};
-		''')
-	income_list = cursor.fetchall()
-	cursor.execute(f'''
-		SELECT id, category, amount, date
 		FROM expense
 		WHERE date >= DATE('{date}') and date < DATE({before_date})
 		ORDER BY {order_by};
 		''')
 	expense_list = cursor.fetchall()
+
 	if only_table == 'expense':
 		return expense_list
+
+	cursor.execute(f'''
+		SELECT id, category, amount, date
+		FROM income
+		WHERE date >= DATE('{date}') and date < DATE({before_date})
+		ORDER BY {order_by};
+		''')
+	income_list = cursor.fetchall()
+
+	if only_table == 'income':
+		return income_list
+
+	if only_table == 'all':
+		return income_list, expense_list
+
 
 	return data_save.operation_str(income_list, expense_list)
 
@@ -354,4 +370,4 @@ def to_excel():
 
 
 if __name__ == '__main__':
-	print(report_month('2022-04'))
+	print(operation_list(year='2022', only_table='all'))
