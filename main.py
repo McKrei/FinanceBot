@@ -1,3 +1,4 @@
+import datetime as dt
 import re
 import asyncio
 
@@ -6,13 +7,11 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.utils import executor
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-import datetime as dt
 
 import visualization
 import data_save
 import markups as nav
 import requests_db as rdb
-
 from activate_bot import token
 
 
@@ -130,37 +129,43 @@ async def choice_report(message: types.Message):
         data_save.random_sticker(),\
         reply_markup=nav.main_menu)
 
-    if message.text == 'Месяц':
-        date = str(dt.datetime.now())[:7]
-        table_expense, table_income = rdb.report_month()
-
+    # Проверка на месяц
     month = data_save.month_dict.get(message.text)
-    if month:
-        date = str(dt.datetime.now().year) + '-' + month
-        table_expense, table_income = rdb.report_month(month)
+    if message.text == 'Месяц' or month:
+        if month: 
+            date = str(dt.datetime.now().year) + '-' + month
+        else:
+            date = str(dt.datetime.now())[:7]
+        
+        table_expense, table_income = rdb.report_month(date)
+        buttons_list = [
+            InlineKeyboardButton('Операции', callback_data=f'list {date}'),
+            InlineKeyboardButton('По дням', callback_data=f'day_inline {date}')
+        ]
+    # Проверка на год
+    elif message.text == 'Год':
+        date = dt.datetime.now().year
+        table_expense, table_income = rdb.report_year()
+        buttons_list = [
+            InlineKeyboardButton('График', callback_data=f'visual plots {date}')
+        ]
 
-    if message.text == 'Год':
-        year = dt.datetime.now().year
-        await bot.send_message(message.from_user.id,\
-            'Тут будет таблица, еще не придумал какая!',\
-            parse_mode=types.ParseMode.HTML,\
-            reply_markup=InlineKeyboardMarkup(row_width=1).add(\
-            InlineKeyboardButton('График', callback_data=f'visual plots {year}')))
-        return
-
+    # Проверка на запрос в будущие. 
     if not table_expense and not table_income: 
         await bot.send_message(message.from_user.id,\
             'Будущие не предсказываю 😜',\
             reply_markup=nav.main_menu)
         return
 
+    buttons_list.append(
+        InlineKeyboardButton('Пирожок', callback_data=f'visual pie {date}')
+    )
+
     await bot.send_message(message.from_user.id,\
         f'<pre>{table_expense}\n{table_income}</pre>',\
         parse_mode=types.ParseMode.HTML,\
-        reply_markup=InlineKeyboardMarkup(row_width=2).add(\
-        InlineKeyboardButton('Операции', callback_data=f'list {date}'),\
-        InlineKeyboardButton('По дням', callback_data=f'day_inline {date}'),\
-        InlineKeyboardButton('Пирожок', callback_data=f'visual pie {date}')))
+        reply_markup=InlineKeyboardMarkup(row_width=2).add(*buttons_list))
+
 
 @dp.message_handler()
 @auth
@@ -294,7 +299,6 @@ async def date_operation(callback: types.CallbackQuery):
         reply_markup=InlineKeyboardMarkup(row_width=5).add(*but_inline_now))
     
     await callback.answer()
-
 
 
 @dp.callback_query_handler(Text(startswith='u '))

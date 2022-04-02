@@ -1,8 +1,8 @@
-from calendar import month
 import sqlite3
 import datetime as dt
 from openpyexcel import load_workbook
 import data_save
+import asyncio
 
 db = sqlite3.connect('data/finance.db')
 cursor = db.cursor()
@@ -118,22 +118,24 @@ def operation_list(date=0, order_by='date', only_table=False, year=None):
 	return data_save.operation_str(income_list, expense_list)
 
 
-def r_limits(month):
+def r_limits(date, period='month'):
 	'''
-	Создаем словарь с лимитами на запрошенный месяц
+	Создаем словарь с лимитами на запрошенный месяц или год
 	'''
 	cursor.execute(f'''
 		SELECT *
 		FROM limits
-		WHERE date = '{month}';
+		WHERE date >= DATE('{date}') AND date < DATE('{date}', '+1 {period}')
 		''')
-	l = cursor.fetchone()
-	if not l: return
+	l = cursor.fetchall()
 
-	l = list(l[1:])
+	if not l: return 			# Проверка на наличе данных
+
 	d = data_save.expense
-	result_dict = {key: [l[i]] for i, key in enumerate(d)} 
+	result_dict = {key: [sum([el[i+1] for el in l])] for i, key in enumerate(d)}
+	
 	return result_dict
+
 
 def report_month(month=0, other=None):
 	if month == 0:
@@ -369,5 +371,50 @@ def to_excel():
 
 
 
+''' ### Отчет за год! ### '''
+
+def report_year(date=None):
+	
+	if not date:							# Если год не передают, берем текущий!
+		date = str(dt.datetime.now().year)
+	date += '-01-01'
+
+	cursor.execute(f'''
+		SELECT category, SUM(amount) as sum
+		FROM expense
+		WHERE date >= DATE('{date}') AND date < DATE('{date}', '+1 year')
+		GROUP BY category
+		ORDER BY sum DESC;
+		''')
+
+	sum_amount = cursor.fetchall() 			# Получаем сумму расходов! 
+	
+	if not sum_amount: 						# Проверка на наличие лимитов
+		return None, None
+
+	sum_expense = sum(dict(sum_amount).values())
+	table_expense = data_save.table_month_income(sum_amount, sum_expense, 'Расходы')
+
+	cursor.execute(f'''
+		SELECT category, SUM(amount) as sum
+		FROM income
+		WHERE date >= DATE('{date}') AND date < DATE('{date}', '+1 year')
+		GROUP BY category
+		ORDER BY sum DESC;
+		''')
+
+	sum_amount = cursor.fetchall()
+	
+	if sum_amount:
+		sum_income = sum(dict(sum_amount).values())
+		table_income = data_save.table_month_income(sum_amount, sum_income)	
+
+	else:
+		table_income = 'Нет доходов'
+		
+	return table_expense, table_income
+
+
+
 if __name__ == '__main__':
-	print(operation_list(year='2022', only_table='all'))
+	print(report_year())

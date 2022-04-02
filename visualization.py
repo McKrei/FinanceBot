@@ -7,8 +7,12 @@ import requests_db as rdb
 import data_save
 
 
-def create_pie(month):
-    data = rdb.operation_list(month, only_table='expense')
+def create_pie(date, year = None):
+
+    if len(date) == 4:          # Проверяем на запрос, на год
+        year = date
+
+    data = rdb.operation_list(date, only_table='expense', year=year)
     if not data:
         return 
     df = pd.DataFrame(data)
@@ -30,7 +34,7 @@ def create_pie(month):
 
     ax1.axis('equal')
     ax1.legend(loc='upper right', bbox_to_anchor=(1.0, 1.0), fontsize=14)
-    ax1.set_title("Расходы за месяц", size=15, weight="bold")
+    ax1.set_title("Расходы", size=15, weight="bold")
     plt.setp(autotexts, size=13, weight="bold")
     plt.savefig('data/saved_figure.png')
     
@@ -91,4 +95,4 @@ def year_plots(year):
     return True
 
 if __name__ == '__main__':
-	year_plots('2022')
+	create_pie('2022', year='2022')

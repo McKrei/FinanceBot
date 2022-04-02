@@ -22,12 +22,12 @@ def table_month_expense(dict, sum_expense, sum_income_limit):
 	return table
 
 
-def table_month_income(list, sum_income):
+def table_month_income(list, sum_income, name='Доход'):
 	table = PrettyTable()
-	table.field_names = ['Принес $', 'Доход']
+	table.field_names = ['Катигория', name]
 	for el in list:
-		table.add_row([all_category_dict[el[0]], el[1]])
-	table.add_row(['Сумма', sum_income])
+		table.add_row([all_category_dict[el[0]], f'{el[1]:,}'])
+	table.add_row(['Сумма', f'{sum_income:,}'])
 	return table
 
 
