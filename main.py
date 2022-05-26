@@ -1,6 +1,7 @@
 import datetime as dt
 import re
 import asyncio
+from tkinter import Y
 
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
@@ -27,13 +28,51 @@ def auth(func):
 
     return wrapper
 
+
+
+# @dp.message_handler(content_types=['voice'])
+# @auth
+# async def send_sticker(message: types.Message):
+# #     # Получим запись
+#     file_id = message.voice.file_id 
+#     file = await bot.get_file(file_id)
+#     file_path = file.file_path
+#     MyBinaryIO = await bot.download_file(file_path)
+#     data = MyBinaryIO.getbuffer()
+#     with open('a.wav', 'rb') as f:
+#         input_wav = f.read()
+#     rate, data = read(io.BytesIO(input_wav))
+
+
+    # data, samplerate = sf.read(data2)
+    # print(data[:50])
+    # print(samplerate)
+    # y = (np.iinfo(np.int32).max * (data/np.abs(data).max())).astype(np.int32)
+    # wavio.write('a.wav', y, 1000 ,sampwidth=2)
+
+#     with open('a.mp3', 'wb') as f:
+#         f.write(data) 
+#     # y = (np.iinfo(np.int32).max * (data/np.abs(data).max())).astype(np.int32)
+#     # sc.write('a.wav', 100, y)
+#     # 
+
+
+#     # with sr.AudioFile('a.wav') as source:
+#     #     Rec = sr.Recognizer()
+#     #     Rec.adjust_for_ambient_noise(source=source, duration=0.5)
+#     #     audio = Rec.listen(source=source)
+#     #     query = Rec.recognize_google(audio_data=audio, language='ru-RU').lower()
+#     # print(query)
+
+
+
 @dp.message_handler(content_types=["sticker"])
 async def send_sticker(message: types.Message):
     # Получим ID Стикера
     sticker_id = message.sticker.file_id
     data_save.random_sticker(sticker_id)
     await bot.send_message(message.from_user.id,\
-        f'Sticker ID:\n{sticker_id}')
+        f'Sticker ID:')
 
 
 @dp.message_handler(commands=['help'])
@@ -72,6 +111,16 @@ async def id_command(message: types.Message):
 async def open_menu(message: types.Message):
     await bot.send_sticker(message.from_user.id,\
         data_save.random_sticker(),\
+        reply_markup=nav.main_menu)
+
+
+@dp.message_handler(Text(equals='Деньги'))
+@auth
+async def money_now(message: types.Message):
+    money = rdb.money_sum_mount()
+    await bot.send_message(
+        message.from_user.id, 
+        f'{money:,} рублей.', 
         reply_markup=nav.main_menu)
 
 
@@ -170,7 +219,7 @@ async def choice_report(message: types.Message):
 @dp.message_handler()
 @auth
 async def processing_mes(message: types.Message):
-    try:
+    try:      
         summ = int(re.findall(r'\d+', message.text)[0])
         if not summ:
             await bot.send_message(message.from_user.id, 'Не вижу суммы!')
@@ -203,6 +252,9 @@ async def processing_mes(message: types.Message):
 
     except Exception:
         await bot.send_message(message.from_user.id, 'Я тебя не понял')
+
+
+
 
 
 @dp.callback_query_handler(Text(startswith='add '))
@@ -332,7 +384,9 @@ async def visualization_data(callback: types.CallbackQuery):
                 with open(path, "rb") as photo:
                     await callback.message.answer_photo(photo)
 
+    await callback.answer()
 
+    
 async def loop_checking(wait):
     while True:
         date_now = dt.datetime.now()

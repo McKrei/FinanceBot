@@ -36,34 +36,38 @@ def del_op(table, operation_id):
 
 
 def sum_month_income_and_expense(month=0):
-	if month == 0:
-		month = str(dt.datetime.now())[:7]
-	if len(month) == 7: month += '-01'
-	cursor.execute(f'''
-		SELECT (Food + Transport + Home + Services + Rest + Other + Health + Clothes) as sum_limits
-		FROM limits
-		WHERE date = DATE('{month}');
-		''')
-	sum_limit = cursor.fetchone()[0]
-	cursor.execute(f'''
-		SELECT SUM(amount)
-		FROM expense
-		WHERE date >= DATE('{month}') and date < DATE('{month}', '+1 month');
-		''')
-	sum_expense = cursor.fetchone()[0]
-	cursor.execute(f'''
-		SELECT SUM(amount)
-		FROM income
-		WHERE date >= DATE('{month}') and date < DATE('{month}', '+1 month');
-		''')
-	sum_income = cursor.fetchone()[0]
+	try:
+		if month == 0:
+			month = str(dt.datetime.now())[:7]
+		if len(month) == 7: month += '-01'
+		cursor.execute(f'''
+			SELECT (Food + Transport + Home + Services + Rest + Other + Health + Clothes) as sum_limits
+			FROM limits
+			WHERE date = DATE('{month}');
+			''')
 
-	# Проверка на наличие данных 
-	sum_expense = 0 if not sum_expense else sum_expense
-	sum_income  = 0 if not sum_income else sum_income
-	
-	return sum_income, sum_limit - sum_expense, sum_expense
-	# return data_save.sum_table(sum_income, sum_limit - sum_income, sum_expense)
+		sum_limit = cursor.fetchone()[0]
+		cursor.execute(f'''
+			SELECT SUM(amount)
+			FROM expense
+			WHERE date >= DATE('{month}') and date < DATE('{month}', '+1 month');
+			''')
+		sum_expense = cursor.fetchone()[0]
+		cursor.execute(f'''
+			SELECT SUM(amount)
+			FROM income
+			WHERE date >= DATE('{month}') and date < DATE('{month}', '+1 month');
+			''')
+		sum_income = cursor.fetchone()[0]
+
+		# Проверка на наличие данных 
+		sum_expense = 0 if not sum_expense else sum_expense
+		sum_income  = 0 if not sum_income else sum_income
+		
+		return sum_income, sum_limit - sum_expense, sum_expense
+		
+	except TypeError:
+		print(f'sum_month_income_and_expense\n{dt.datetime.now()}, {month = }')
 
 
 def operation_list(date=0, order_by='date', only_table=False, year=None):
@@ -269,7 +273,17 @@ def new_month(date):
 	if not cursor.fetchone():
 		result = limit_per_mont(get_last_month())
 		cursor.execute('INSERT INTO limits VALUES (?,?,?,?,?,?,?,?,?)', [date] + result)
-		db.commit()	
+		db.commit()
+	
+	# Записываем кол-во ДС на начало месяца
+	last_month = get_last_month()
+	last_sum_money = money_sum_mount(last_month)
+	cursor.execute(f"SELECT * FROM money_sum WHERE date = '{date}'")
+	if not cursor.fetchone():
+		result = limit_per_mont(get_last_month())
+		cursor.execute(f'INSERT INTO money_sum VALUES ({date}, {last_sum_money})')
+		db.commit()
+
 	return
 
 def update_table_limits_now_month():
@@ -414,7 +428,18 @@ def report_year(date=None):
 		
 	return table_expense, table_income
 
+def money_sum_mount(month=None):
+	''' Считаем ДС которые в данный момент есть (должны быть) в наличии '''
+	if not month:
+		month = str(dt.datetime.now())[:7] + '-01'
+	cursor.execute(f'''
+		SELECT sum	FROM money_sum	WHERE date = '{month}'
+		''')
+	begin_mount = cursor.fetchone()[0]
+	sum_income, limit, sum_expense = sum_month_income_and_expense(month)
+	return begin_mount + (sum_income - sum_expense)
+
 
 
 if __name__ == '__main__':
-	print(report_year())
+	print(money_sum_mount())
