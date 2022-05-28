@@ -223,6 +223,7 @@ def update_monthly_limit(list, date=0, table='monthly_limit'):
 	db.commit()
 	return 
 
+
 def change_limit_in_db(result):
 	if result == 'save':
 		data = get_limits()
@@ -259,7 +260,7 @@ def limit_per_mont(month, month_limit='0000-00-00'):
 	return result
 
 def new_month(date):
-	# Записываем лимиты в таблички в начале месяца
+	''' Записываем лимиты в таблички в начале месяца '''
 
 	# Проверка на наличие данных в monthly_limit и запись
 	cursor.execute(f"SELECT * FROM monthly_limit WHERE date = '{date}'")
@@ -276,15 +277,10 @@ def new_month(date):
 		db.commit()
 	
 	# Записываем кол-во ДС на начало месяца
-	last_month = get_last_month()
-	last_sum_money = money_sum_mount(last_month)
-	cursor.execute(f"SELECT * FROM money_sum WHERE date = '{date}'")
-	if not cursor.fetchone():
-		result = limit_per_mont(get_last_month())
-		cursor.execute(f'INSERT INTO money_sum VALUES ({date}, {last_sum_money})')
-		db.commit()
+	write_money(date)
 
-	return
+
+
 
 def update_table_limits_now_month():
 	month = str(dt.datetime.now())[:7]
@@ -293,14 +289,16 @@ def update_table_limits_now_month():
 	update_monthly_limit(limit, month + '-01', 'limits')
 
 
-# Проверка на соответствие валидности данных в лимитах
+
 def check_sum_and_limit_update():
+	''' Проверка на соответствие валидности данных в лимитах '''
 	result = False
 	now_month = str(dt.datetime.now())[:7] + '-01'
 	last_month = get_last_month()
 	now_expense_list = limit_per_mont(last_month)
 	cursor.execute(f"SELECT * FROM limits WHERE date = '{now_month}'")
 	limits = cursor.fetchone()
+
 	if limits:
 		last_expense_list = list(limits[1:])
 	else:
@@ -311,7 +309,8 @@ def check_sum_and_limit_update():
 			break
 	if result == True:
 		update_monthly_limit(now_expense_list, now_month, 'limits')
-	return result
+
+	
 
 
 def update_operation(table, op_id, date):
@@ -436,10 +435,29 @@ def money_sum_mount(month=None):
 		SELECT sum	FROM money_sum	WHERE date = '{month}'
 		''')
 	begin_mount = cursor.fetchone()[0]
-	sum_income, limit, sum_expense = sum_month_income_and_expense(month)
+	sum_income, _, sum_expense = sum_month_income_and_expense(month)
 	return begin_mount + (sum_income - sum_expense)
 
 
+def write_money(mount=None):
+	''' Делаем запись в таблицу money_sum, сразу делаем проверку
+	на наличие изменений в таблице, если добавились новые записи'''
+
+	if not mount:
+		mount = str(dt.datetime.now())[:7] + '-01'
+
+	last_month = get_last_month()
+	last_sum_money = money_sum_mount(last_month)
+	sum_money = cursor.execute(f"SELECT * FROM money_sum WHERE date = '{mount}'")
+
+	if not sum_money:
+		cursor.execute(f'INSERT INTO money_sum VALUES ({mount}, {last_sum_money})')
+
+	elif sum_money != last_sum_money:
+		cursor.execute(
+			f'UPDATE money_sum SET sum = {last_sum_money} WHERE date {mount}'
+			)
+	db.commit()
 
 if __name__ == '__main__':
 	print(money_sum_mount())

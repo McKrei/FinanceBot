@@ -1,7 +1,6 @@
 import datetime as dt
 import re
 import asyncio
-from tkinter import Y
 
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
@@ -387,29 +386,41 @@ async def visualization_data(callback: types.CallbackQuery):
     await callback.answer()
 
     
-async def loop_checking(wait):
+async def loop_checking():
+    wait = 3_600
     while True:
         date_now = dt.datetime.now()
 
-        if str(date_now.day) == '1':            
+        if date_now.day == 1:
             # Генерим новые лимиты на месяц
             date = str(date_now)[:10]
             rdb.new_month(date)
 
-            # Переносим БД в эксель и отправляем пользователю
+            # Переносим БД в эксель и отправляем пользователю первому в списке
             path = rdb.to_excel()
-            file = open(path,"rb")
+            file = open(path,"rb")            
             await bot.send_document(data_save.users_id[0], file)
             file.close()
+        
+        # отправляем напоминание о внесение ДС
+        if date_now.hour == 18:
+            await users_notification()
+            wait = 14_400
 
+        # проверка данных в таблицах на валидность! 
+        rdb.check_sum_and_limit_update()
         rdb.change_limit_in_db('return')
 
-        if str(date_now.month) != '1':
-            rdb.check_sum_and_limit_update()
         await asyncio.sleep(wait)
 
 
+async def users_notification():
+    users = data_save.users_id
+    mes = data_save.notification 
+    for user in users:
+        await bot.send_message(user, mes)
+
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.create_task(loop_checking(86_400))
+    loop.create_task(loop_checking()) 
     executor.start_polling(dp)
