@@ -2,3 +2,4 @@ __pycache__
 venv
 finance.db
 data
+activate_bot.py

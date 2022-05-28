@@ -12,7 +12,7 @@ import visualization
 import data_save
 import markups as nav
 import requests_db as rdb
-from activate_bot import token
+from activate_bot import token, users_id
 
 
 bot = Bot(token=token)
@@ -21,47 +21,11 @@ dp = Dispatcher(bot)
 
 def auth(func):
     async def wrapper(message):
-        if message['from']['id'] not in data_save.users_id:
+        if message['from']['id'] not in users_id:
             return
         return await func(message)
 
     return wrapper
-
-
-
-# @dp.message_handler(content_types=['voice'])
-# @auth
-# async def send_sticker(message: types.Message):
-# #     # Получим запись
-#     file_id = message.voice.file_id 
-#     file = await bot.get_file(file_id)
-#     file_path = file.file_path
-#     MyBinaryIO = await bot.download_file(file_path)
-#     data = MyBinaryIO.getbuffer()
-#     with open('a.wav', 'rb') as f:
-#         input_wav = f.read()
-#     rate, data = read(io.BytesIO(input_wav))
-
-
-    # data, samplerate = sf.read(data2)
-    # print(data[:50])
-    # print(samplerate)
-    # y = (np.iinfo(np.int32).max * (data/np.abs(data).max())).astype(np.int32)
-    # wavio.write('a.wav', y, 1000 ,sampwidth=2)
-
-#     with open('a.mp3', 'wb') as f:
-#         f.write(data) 
-#     # y = (np.iinfo(np.int32).max * (data/np.abs(data).max())).astype(np.int32)
-#     # sc.write('a.wav', 100, y)
-#     # 
-
-
-#     # with sr.AudioFile('a.wav') as source:
-#     #     Rec = sr.Recognizer()
-#     #     Rec.adjust_for_ambient_noise(source=source, duration=0.5)
-#     #     audio = Rec.listen(source=source)
-#     #     query = Rec.recognize_google(audio_data=audio, language='ru-RU').lower()
-#     # print(query)
 
 
 
@@ -399,7 +363,7 @@ async def loop_checking():
             # Переносим БД в эксель и отправляем пользователю первому в списке
             path = rdb.to_excel()
             file = open(path,"rb")            
-            await bot.send_document(data_save.users_id[0], file)
+            await bot.send_document(users_id[0], file)
             file.close()
         
         # отправляем напоминание о внесение ДС
@@ -415,9 +379,8 @@ async def loop_checking():
 
 
 async def users_notification():
-    users = data_save.users_id
     mes = data_save.notification 
-    for user in users:
+    for user in users_id:
         await bot.send_message(user, mes)
 
 if __name__ == '__main__':

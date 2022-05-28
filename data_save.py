@@ -85,8 +85,6 @@ report_list = ('Выбрать Месяц!',
 	'Декабрь'
 )			
 
-users_id = (415598571, 397014552)
-
 expense = {
 	'Food': ('Food', 'Еда\Быт', 'еда', 'быт', 'сома'),
 	'Transport': ('Transport', 'Транспорт', 'транспорт', 'машина', 'бензин'),
@@ -125,6 +123,7 @@ notification = random.choice([
 	'Будь лапочкой отправь расходы'
 ])
 
+
 message_help = '''
 	Для старта работы в боте введи /start
 	Для записи операции используй формулу:
@@ -139,6 +138,7 @@ message_help = '''
 
 	Все остальное интуитивно понятно!	
 '''
+
 
 sticker_list = ['CAACAgIAAxkBAAPRYem-0F6qF6mJfOajDPi_HmL0nWAAAuQRAAKEcVlIZsvazGS6RV4jBA']
 
@@ -192,4 +192,3 @@ def limits_table(list):
 	return table
 
 
-# if __name__ == '__main__':
